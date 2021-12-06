@@ -23,6 +23,10 @@ const int Enable12 = 76;
 const int Driver1A = 58;
 const int Driver2A = 59;
 
+//for water level detection
+const int minLevel = 0; //minimum sensor value
+const int maxLevel = 1024; //maximum sensor value
+
 void setup() {
   //A0 and A1 are for the LCD (outputs)
   *ddr_a |= 0x01 << 0;
@@ -36,7 +40,7 @@ void setup() {
   *ddr_c &= ~(0x01 << 8 - 8);  
   //A10 is for the humidity controller (input)
   *ddr_c &= ~(0x01 << 10 - 8);
-  //A13 to A15 are for the motor contrl (output)
+  //A13 to A15 are for the motor control (output)
   *ddr_c |= 0x01 << 13 - 8;
   *ddr_c |= 0x01 << 14 - 8;
   *ddr_c |= 0x01 << 15 - 8;
@@ -117,6 +121,12 @@ void loop() {
   //10 second wait
   delay(10000);
   
+  //get water level reading
+  int waterLevel = analogRead(53);
+  int range = map(waterLevel, minLevel, maxLevel, 0, 21);
+  //1 second wait
+  delay(1000);
+  
   //grab 40-bit data packet from DHT sensor
   int readDHT = dht.read(8);
   //move cursor to top left corner
@@ -131,6 +141,11 @@ void loop() {
   lcd.print("Humidity: ");
   lcd.print(dht.readHumidity(true));
   lcd.print("%");
+  //move cursor down one line
+  lcd.setCursor(0, 2);
+  lcd.print("Water Level: ");
+  lcd.print(range * 5);
+  lcd.prinf("%");  
   //3 second wait
   delay(3000);
 }
