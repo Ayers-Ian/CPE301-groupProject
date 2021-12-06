@@ -35,6 +35,16 @@ volatile unsigned char */*name*/    = (unsigned char*) 0x/*address*/;
 volatile unsigned char */*name*/    = (unsigned char*) 0x/*address*/;
 volatile unsigned char */*name*/    = (unsigned char*) 0x/*address*/;
 
+/**
+ *   NEW CODE
+ *   I FOUND THE PORT A STUFF
+ *   PAGE 96 of the guide on canvas
+ */
+//Port A register pointers
+volatile unsigned char* port_a  = (unsigned char*) 0x22; //data register
+volatile unsigned char* ddr_a   = (unsigned char*) 0x21; //direction register
+volatile unsigned char* pin_a   = (unsigned char*) 0x20; //address register
+
 dht DHT;
 
 const int RS = 2, EN = 3, D4 = 4, D5 = 5, D6 = 6, D7 = 7;
@@ -48,6 +58,24 @@ const int Driver1A = 4;  // To L293D's 1A (pin 2)
 const int Driver2A = 3;  // To L293D's 2A (pin 7)
 
 void setup() {
+  *ddr_a |= 0x80; //set PA7 to OUTPUT  /* These lines are also         */
+  *ddr_a |= 0x40; //set PA6 to OUTPUT  /* references, we can just copy */
+  *ddr_a |= 0x20; //set PA5 to OUTPUT  /* these lines to anywhere they */
+  *ddr_a |= 0x10; //set PA4 to OUTPUT  /* are needed in the program,   */
+  *ddr_a |= 0x08; //set PA3 to OUTPUT  /* if they are needed.          */
+  *ddr_a |= 0x04; //set PA2 to OUTPUT  /* A lot of these lines are     */
+  *ddr_a |= 0x02; //set PA1 to OUTPUT  /* probably never going to be   */
+  *ddr_a |= 0x01; //set PA0 to OUTPUT  /* used but I'm almost certain  */
+  *ddr_a &= 0x7F; //set PA7 to INPUT   /* we need at least 1 or 2 of   */
+  *ddr_a &= 0xBF; //set PA6 to INPUT   /* these.                       */
+  *ddr_a &= 0xDF; //set PA5 to INPUT
+  *ddr_a &= 0xEF; //set PA4 to INPUT
+  *ddr_a &= 0xF7; //set PA3 to INPUT
+  *ddr_a &= 0xFB; //set PA2 to INPUT
+  *ddr_a &= 0xFD; //set PA1 to INPUT
+  *ddr_a &= 0xFE; //set PA0 to INPUT
+  
+  
   lcd.begin(16,2);    //set 16 columns and 2 rows of 16x2 LCD
   //---set pin direction
   pinMode(Enable12,OUTPUT);
