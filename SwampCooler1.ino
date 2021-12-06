@@ -143,9 +143,9 @@ void loop() {
   lcd.print("%");
   //move cursor down one line
   lcd.setCursor(0, 2);
-  lcd.print("Tank Level: ");
+  lcd.print("Water Tank: ");
   lcd.print(range * 5);
-  lcd.prinf("%");  
+  lcd.print("%");  
   //3 second wait
   delay(3000);
 }
