@@ -28,6 +28,15 @@ volatile unsigned char *myTIMSK1 = (unsigned char*) 0x6F;
 volatile unsigned char *myTIFR1 = (unsigned char*) 0x36;
 volatile unsigned int *myTCNT1 = (unsigned int* ) 0x84;
 /* end crap from lab 9 */
+/**
+ *   NEW CODE
+ *   I FOUND THE PORT A STUFF
+ *   PAGE 96 of the guide on canvas
+ */
+//Port A register pointers
+volatile unsigned char* port_a  = (unsigned char*) 0x22; //data register
+volatile unsigned char* ddr_a   = (unsigned char*) 0x21; //direction register
+volatile unsigned char* pin_a   = (unsigned char*) 0x20; //address register
 
 
 
