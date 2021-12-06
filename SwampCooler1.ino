@@ -1,130 +1,136 @@
-/*
- * THESE ADDRESS THINGS ARE CALLED REGISTERS
- * AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+/* CPE 301 Final Project
+ * Alexander Ram, Ian Ayers
  */
-
 
 #include <DHT.h>
 #include <LiquidCrystal.h>
 
-#define RDA 0x80
-#define TBE 0x20
-
-/* crap that I stole from lab 9 */
-// UART Pointers
-volatile unsigned char *myUCSR0A = (unsigned char*)0x00C0;
-volatile unsigned char *myUCSR0B = (unsigned char*)0x00C1;
-volatile unsigned char *myUCSR0C = (unsigned char*)0x00C2;
-volatile unsigned int *myUBRR0 = (unsigned int* )0x00C4;
-volatile unsigned char *myUDR0 = (unsigned char*)0x00C6;
-// GPIO Pointers
-volatile unsigned char *portB = (unsigned char*) 0x25;
-volatile unsigned char *portDDRB = (unsigned char*) 0x24;
-// Timer Pointers
-volatile unsigned char *myTCCR1A = (unsigned char*) 0x80;
-volatile unsigned char *myTCCR1B = (unsigned char*) 0x81;
-volatile unsigned char *myTCCR1C = (unsigned char*) 0x82;
-volatile unsigned char *myTIMSK1 = (unsigned char*) 0x6F;
-volatile unsigned char *myTIFR1 = (unsigned char*) 0x36;
-volatile unsigned int *myTCNT1 = (unsigned int* ) 0x84;
-/* end crap from lab 9 */
-/**
- *   NEW CODE
- *   I FOUND THE PORT A STUFF
- *   PAGE 96 of the guide on canvas
- */
-//Port A register pointers
+//Port A register pointers (pins A0 to A7)
 volatile unsigned char* port_a  = (unsigned char*) 0x22; //data register
 volatile unsigned char* ddr_a   = (unsigned char*) 0x21; //direction register
 volatile unsigned char* pin_a   = (unsigned char*) 0x20; //address register
+//Port C register pointers (pins A8 to A15)
+volatile unsigned char* port_c  = (unsigned char*) 0x28; //data register
+volatile unsigned char* ddr_c   = (unsigned char*) 0x27; //direction register
+volatile unsigned char* pin_c   = (unsigned char*) 0x26; //address register
 
+//for screen control
+const int RS = 78, EN = 77, D4 = 74, D5 = 73, D6 = 72, D7 = 71;
+LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
 
-
-
-const int RS = 2, EN = 3, D4 = 4, D5 = 5, D6 = 6, D7 = 7;
-LiquidCrystal lcd(RS,EN,D4,D5,D6,D7);   //set Uno pins that are connected to LCD, 4-bit mode
-//D4 through D7 are output pins for the LCD: A4 through A7 for us
-//RS is register select pin: A0 for us
-//EN is some kind of enable pin: A1 for us
-
-const int Enable12 = 5;  // PWM pin to L293D's EN12 (pin 1) 
-const int Driver1A = 4;  // To L293D's 1A (pin 2)
-const int Driver2A = 3;  // To L293D's 2A (pin 7)
+//for motor control
+const int Enable12 = 76;
+const int Driver1A = 58;
+const int Driver2A = 59;
 
 void setup() {
-  lcd.begin(16,2);    //set 16 columns and 2 rows of 16x2 LCD
-  //---set pin direction
+  //A0 and A1 are for the LCD (outputs)
+  *ddr_a |= 0x01 << 0;
+  *ddr_a |= 0x01 << 1;
+  //A4 to A7 are for the LCD (outputs)
+  *ddr_a |= 0x01 << 4;
+  *ddr_a |= 0x01 << 5;
+  *ddr_a |= 0x01 << 6;
+  *ddr_a |= 0x01 << 7;
+  //A8 is for the water sensor (input)
+  *ddr_c &= ~(0x01 << 8 - 8);  
+  //A10 is for the humidity controller (input)
+  *ddr_c &= ~(0x01 << 10 - 8);
+  //A13 to A15 are for the motor contrl (output)
+  *ddr_c |= 0x01 << 13 - 8;
+  *ddr_c |= 0x01 << 14 - 8;
+  *ddr_c |= 0x01 << 15 - 8;
+  
+  lcd.begin(16, 2);    //set 16 columns and 2 rows of 16x2 LCD
+  
+  //set pin direction for pins numbered above
   pinMode(Enable12,OUTPUT);
   pinMode(Driver1A,OUTPUT);
   pinMode(Driver2A,OUTPUT);
+  
   Serial.begin(9600);
 }
 
-void motorCTRL(byte speed, bool D1A, bool D2A){
-    /*  motorCTRL controls the DC motor
-     *    speed: any value between 0-255, used as PWM
-     *             0 - off
-     *           255 - maximum
-     *      D1A: Input 1 or 1A, boolean value of HIGH or LOW          
-     *      D2A: Input 2 or 2A, boolean value of HIGH or LOW
-     */
-  analogWrite(Enable12,speed);  // PWM
-  digitalWrite(Driver1A,D1A);   // Boolean
-  digitalWrite(Driver2A,D2A);   // Boolean 
+void motorController(byte speed, bool D1A, bool D2A){
+  //to control the DC motor
+  //speed: 0-255 as PWM, 0 = off, 255 = max
+  //D1A: Input 1 or 1A, bool hi/low
+  //D2A: Input 2 or 2A, bool hi/low
+  analogWrite(Enable12, speed); //PWM
+  digitalWrite(Driver1A, D1A); //bool
+  digitalWrite(Driver2A, D2A); //bool
 }
 
 void loop() {
-  Serial.println("One way, then reverse");
-    //---back and forth example
+  Serial.println("forwards; then backwards");
   for (int i = 0; i < 5; ++i){
-        motorCTRL(255,HIGH,LOW);  // one way
+    //forwards 0.5 seconds
+    motorController(255, HIGH, LOW);
     delay(500);
-    motorCTRL(255,LOW,HIGH);  // reverse
+    //backwards 0.5 seconds
+    motorController(255, LOW, HIGH);
     delay(500);
   }
-  motorCTRL(0,LOW,HIGH);        // Stop
+  //halt
+  motorController(0, LOW, HIGH);
+  //2 second wait
   delay(2000);
 
-  Serial.println("fast Slow example");
-  //---fast/slow stop example
-  motorCTRL(255,HIGH,LOW);      // one way
+  Serial.println("stopping slowly then stopping quickly");
+  //forwards 3 seconds
+  motorController(255, HIGH, LOW); //forwards
   delay(3000);
-  motorCTRL(0,HIGH,LOW);        // slow stop
+  //slow stop plus 2 seconds
+  motorController(0, HIGH, LOW);
   delay(2000);
-  motorCTRL(255,LOW,HIGH);      // reverse
+  //backwards 3 seconds
+  motorController(255, LOW, HIGH);
   delay(3000);
-  motorCTRL(255,LOW,LOW);       // fast stop
+  //quick stop plus 2 seconds
+  motorController(255, LOW, LOW);
   delay(2000);
 
-  Serial.println("PWM full then slow");
-  //---PWM example, full speed then slow
+  Serial.println("full speed PWM then slow speed PWM");
+  //PWM from full speed to about 21% speed
+  //speed changes once per second
   for(int x = 255; x >= 55; x -= 25){
-        motorCTRL(x,HIGH,LOW);
-        delay(1000);
-    }
-  motorCTRL(0,HIGH,LOW);        // Stop
-    delay(2000);
+    motorController(x, HIGH, LOW);
+    delay(1000);
+  }
+  //halt
+  motorController(0, HIGH, LOW);
+  //2 second wait
+  delay(2000);
 
-  Serial.println("PWM slow then full");
-  //---PWM example, slow then full speed
-    for(int x = 55; x <= 255; x += 25){
-        motorCTRL(x,HIGH,LOW);
-        delay(1000);
-    }
+  Serial.println("slow speed PWM then full speed PWM");
+  //PWM from about 21% speed to full speed
+  //speed changes once per second
+  for(int x = 55; x <= 255; x += 25){
+    motorController(x, HIGH, LOW);
+    delay(1000);
+  }
+  
   DHT dht(2, DHT11);
 
-  motorCTRL(0,HIGH,LOW);        // Stop
+  //halt
+  motorController(0,HIGH,LOW);
+  //10 second wait
   delay(10000);
-  int readDHT = dht.read(8);    //grab 40-bit data packet from DHT sensor
-  lcd.setCursor(0,0); 
+  
+  //grab 40-bit data packet from DHT sensor
+  int readDHT = dht.read(8);
+  //move cursor to top left corner
+  lcd.setCursor(0, 0);
+  //print temperature
   lcd.print("Temp: ");
   lcd.print(dht.readTemperature(true, true));
-  //lcd.print((char)223);         //used to display degree symbol on display
-  //lcd.write(0xdf);              //another way to display degree symbol
+  lcd.write(0xDF); //degree sign, can also use lcd.print((char)223);
   lcd.print("C");
-  lcd.setCursor(0,1);
+  //move cursor down one line
+  lcd.setCursor(0, 1);
   lcd.print("Humidity: ");
   lcd.print(dht.readHumidity(true));
   lcd.print("%");
+  //3 second wait
   delay(3000);
 }
