@@ -44,9 +44,9 @@ void setup() {
   lcd.begin(16, 2);    //set 16 columns and 2 rows of 16x2 LCD
   
   //set pin direction for pins numbered above
-  pinMode(Enable12,OUTPUT);
-  pinMode(Driver1A,OUTPUT);
-  pinMode(Driver2A,OUTPUT);
+  pinMode(Enable12, OUTPUT);
+  pinMode(Driver1A, OUTPUT);
+  pinMode(Driver2A, OUTPUT);
   
   Serial.begin(9600);
 }
